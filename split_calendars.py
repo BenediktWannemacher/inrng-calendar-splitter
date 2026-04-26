@@ -1,9 +1,9 @@
 import re
 from pathlib import Path
-from datetime import datetime, timezone
 
 import requests
 from icalendar import Calendar, Event
+from website import build_website
 
 from config import SOURCE_URL, ATTRIBUTION, FILTERS
 OUTPUT_DIR = Path("public")
@@ -68,30 +68,8 @@ def main():
 
         generated[filename] = config["name"]
 
-    index = [
-        "<!doctype html>",
-        "<html><head><meta charset='utf-8'><title>Cycling Calendars</title></head><body>",
-        "<h1>Cycling Calendars</h1>",
-        "<p>Filtered calendars based on the INRNG Pro Cycling Calendar.</p>",
-        "<p>Source: <a href='https://inrng.com/calendar/'>INRNG Calendar</a></p>",
-        "<ul>",
-    ]
-
-    for filename, config in FILTERS.items():
-        name = config["name"]
-        description = config["description"]
-
-        index.append(
-            f"<li style='margin-bottom:10px'><a href='./{filename}'>{name}</a><br><small>{description}</small></li>"
-        )
-
-    index.extend([
-        "</ul>",
-        f"<p>Last generated: {datetime.now(timezone.utc).isoformat()}</p>",
-        "</body></html>",
-    ])
-
-    (OUTPUT_DIR / "index.html").write_text("\n".join(index), encoding="utf-8")
+    html = build_website(FILTERS)
+    (OUTPUT_DIR / "index.html").write_text(html, encoding="utf-8")
 
     print("🎉 Fertig! Dateien im /public Ordner")
 
