@@ -5,36 +5,8 @@ from datetime import datetime, timezone
 import requests
 from icalendar import Calendar, Event
 
-SOURCE_URL = "https://calendar.google.com/calendar/ical/5c9dc1a627cf55f1653d17573c2df58075d949559ec87e484b0cf90fa78bbf6d%40group.calendar.google.com/public/basic.ics"
+from config import SOURCE_URL, ATTRIBUTION, FILTERS
 OUTPUT_DIR = Path("public")
-
-ATTRIBUTION = (
-    "Source: INRNG Pro Cycling Calendar – https://inrng.com/calendar/ "
-    "Filtered calendar generated independently."
-)
-
-FILTERS = {
-    "men-worldtour.ics": {
-        "name": "Cycling – Men WorldTour",
-        "patterns": [r"\b1\.UWT\b", r"\b2\.UWT\b"],
-    },
-    "women-worldtour.ics": {
-        "name": "Cycling – Women WorldTour",
-        "patterns": [r"\b1\.WWT\b", r"\b2\.WWT\b"],
-    },
-    "worldtour-all.ics": {
-        "name": "Cycling – WorldTour All",
-        "patterns": [r"\b1\.UWT\b", r"\b2\.UWT\b", r"\b1\.WWT\b", r"\b2\.WWT\b"],
-    },
-    "one-day-rest.ics": {
-        "name": "Cycling – One Day Rest",
-        "patterns": [r"\b1\.(?!UWT\b|WWT\b)[A-Za-z0-9.]+\b"],
-    },
-    "stage-race-rest.ics": {
-        "name": "Cycling – Stage Race Rest",
-        "patterns": [r"\b2\.(?!UWT\b|WWT\b)[A-Za-z0-9.]+\b"],
-    },
-}
 
 
 def matches(title: str, patterns: list[str]) -> bool:
@@ -51,12 +23,12 @@ def clone_event(event: Event) -> Event:
     return new_event
 
 
-def build_calendar(name: str) -> Calendar:
+def build_calendar(name: str, description: str) -> Calendar:
     cal = Calendar()
     cal.add("prodid", "-//inrng-calendar-splitter//github-pages//")
     cal.add("version", "2.0")
     cal.add("x-wr-calname", name)
-    cal.add("x-wr-caldesc", ATTRIBUTION)
+    cal.add("x-wr-caldesc", f"{description} {ATTRIBUTION}")
     return cal
 
 
@@ -80,7 +52,7 @@ def main():
     generated = {}
 
     for filename, config in FILTERS.items():
-        cal = build_calendar(config["name"])
+        cal = build_calendar(config["name"], config.get("description", ""))
         count = 0
 
         for event in events:
@@ -105,8 +77,13 @@ def main():
         "<ul>",
     ]
 
-    for filename, name in generated.items():
-        index.append(f"<li><a href='./{filename}'>{name}</a></li>")
+    for filename, config in FILTERS.items():
+        name = config["name"]
+        description = config["description"]
+
+        index.append(
+            f"<li style='margin-bottom:10px'><a href='./{filename}'>{name}</a><br><small>{description}</small></li>"
+        )
 
     index.extend([
         "</ul>",
